@@ -1,0 +1,13 @@
+-i https://pypi.org/simple
+--extra-index-url https://download.pytorch.org/whl/cu118/
+numpy==1.24.4; python_version >= '3.8'
+pandas==2.0.3; python_version >= '3.8'
+pytorch-lightning==2.0.9; python_version >= '3.8'
+torch==2.0.1+cu118
+torchmetrics==1.2.0; python_version >= '3.8'
+torchvision==0.15.2; python_version >= '3.8'
+sentence-transformers==2.2.2; python_full_version >= '3.6.0'
+langchain[llms]==0.0.301; python_version < '4.0' and python_full_version >= '3.8.1'
+redis==5.0.0; python_version >= '3.7'
+pypdf==3.16.2; python_version >= '3.6'
+bs4
