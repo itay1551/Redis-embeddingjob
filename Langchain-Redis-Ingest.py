@@ -16,45 +16,35 @@ from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.vectorstores.redis import Redis
+from langchain.document_loaders import WebBaseLoader
 import os
 
-# In[17]:
-
 redis_url = os.getenv('REDIS_URL')
+doc_folder = os.getenv('DOC_LOCATION')
+temp_folder = os.getenv('TEMP_DIR')
 index_name = "docs"
 
 
 # #### Imports
 
-# In[18]:
-
 # ## Initial index creation and document ingestion
 
 # #### Document loading from a folder containing PDFs
 
-# In[19]:
-
-
-pdf_folder_path = 'rhods-doc'
-
+pdf_folder_path = temp_folder+'/source_repo/'+doc_folder
+print('PDF folder:',pdf_folder_path)
 loader = PyPDFDirectoryLoader(pdf_folder_path)
 docs = loader.load()
-
+#exit()
 
 # #### Split documents into chunks with some overlap
-
-
-
+print(">>>>Document splitting .....")
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024,
                                                chunk_overlap=40)
 all_splits = text_splitter.split_documents(docs)
 
-
+print(">>>>Creating index .....")
 # #### Create the index and ingest the documents
-
-# In[21]:
-
-
 embeddings = HuggingFaceEmbeddings()
 rds = Redis.from_documents(all_splits,
                            embeddings,
@@ -63,25 +53,10 @@ rds = Redis.from_documents(all_splits,
 
 
 # #### Write the schema to a yaml file to be able to open the index later on
-
-# In[22]:
-
 print("Creating schema...")
 rds.write_schema("redis_schema.yaml")
-
-
 # ## Ingesting new documents
-
 # #### Example with Web pages
-
-# In[23]:
-
-
-from langchain.document_loaders import WebBaseLoader
-
-
-# In[24]:
-
 
 loader = WebBaseLoader(["https://ai-on-openshift.io/getting-started/openshift/",
                         "https://ai-on-openshift.io/getting-started/opendatahub/",
@@ -95,31 +70,16 @@ loader = WebBaseLoader(["https://ai-on-openshift.io/getting-started/openshift/",
                        ])
 
 
-# In[25]:
-
-
+print(">>>>Loading Documents .....")
 data = loader.load()
-
-
-# In[26]:
-
-
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024,
                                                chunk_overlap=40)
 all_splits = text_splitter.split_documents(data)
-
-
-# In[27]:
-
-
+print(">>>Adding new documents from Web... ")
 embeddings = HuggingFaceEmbeddings()
 rds = Redis.from_existing_index(embeddings,
                                 redis_url=redis_url,
                                 index_name=index_name,
                                 schema="redis_schema.yaml")
-
-
-# In[28]:
-
 
 rds.add_documents(all_splits)
