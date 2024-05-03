@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: embeddingjob
-        image: quay.io/ecosystem-appeng/embeddingjob:0.0.2
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.3
         command: ["/usr/bin/bash", "/app/entrypoint.sh"]
         env:
           - name: DB_PASS
@@ -25,6 +25,8 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+          - name: DB_TYPE
+            value: "REDIS"
           - name: REDIS_URL
             value: "redis://redis-stack-server.$(NAMESPACE).svc.cluster.local:6379"
           - name: TRANSFORMERS_CACHE
