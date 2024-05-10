@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: embeddingjob
+spec:
+  completions: 1 
+  activeDeadlineSeconds: 1800
+  backoffLimit: 1
+  template:   
+    metadata:
+      name: embeddingjob
+    spec:
+      containers:
+      - name: embeddingjob
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.3
+        command: ["/usr/bin/bash", "/app/entrypoint.sh"]
+        env:
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: vectordb
+                key: password
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: DB_TYPE
+            value: "PGVECTOR"
+          - name: PGVECTOR_COLLECTION_NAME
+            value: "rhoai-doc"
+          - name: PGVECTOR_URL
+            value: "postgresql+psycopg://vectordb:$(DB_PASS)@postgresql-service:5432/vectordb"
+          - name: TRANSFORMERS_CACHE
+            value: '/cache/.cache'
+          - name: SENTENCE_TRANSFORMERS_HOME
+            value: '/cache/.cache'
+          - name: DOC_GIT_REPO
+            value: https://github.com/RHEcosystemAppEng/llm-on-openshift.git
+          - name: DOC_LOCATION
+            value: examples/notebooks/langchain/rhods-doc
+          - name: TEMP_DIR
+            value: '/tmp'
+        volumeMounts:
+        - mountPath: /cache/
+          name: cache-volume
+      volumes:
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 2Gi
+      restartPolicy: Never
