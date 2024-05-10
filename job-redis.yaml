@@ -15,11 +15,6 @@ spec:
         image: quay.io/ecosystem-appeng/embeddingjob:0.0.3
         command: ["/usr/bin/bash", "/app/entrypoint.sh"]
         env:
-          - name: DB_PASS
-            valueFrom:
-              secretKeyRef:
-                name: redb-my-doc
-                key: password
           - name: NAMESPACE
             valueFrom:
               fieldRef:
