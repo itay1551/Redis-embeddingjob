@@ -1,34 +1,25 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: embeddingjob
+  name: populate-vectordb
 spec:
   completions: 1 
   activeDeadlineSeconds: 1800
-  backoffLimit: 1
+  backoffLimit: 6
   template:   
     metadata:
-      name: embeddingjob
+      name: populate-vectordb
     spec:
       containers:
-      - name: embeddingjob
-        image: quay.io/ecosystem-appeng/embeddingjob:0.0.3
+      - name: populate-vectordb
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
         command: ["/usr/bin/bash", "/app/entrypoint.sh"]
         env:
-          - name: DB_PASS
-            valueFrom:
-              secretKeyRef:
-                name: redb-my-doc
-                key: password
           - name: NAMESPACE
             valueFrom:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: DB_TYPE
-            value: "REDIS"
-          - name: REDIS_URL
-            value: "redis://redis-stack-server.$(NAMESPACE).svc.cluster.local:6379"
           - name: TRANSFORMERS_CACHE
             value: '/cache/.cache'
           - name: SENTENCE_TRANSFORMERS_HOME
@@ -39,6 +30,9 @@ spec:
             value: examples/notebooks/langchain/rhods-doc
           - name: TEMP_DIR
             value: '/tmp'
+        envFrom:
+          - secretRef:
+              name: vector-db-config
         volumeMounts:
         - mountPath: /cache/
           name: cache-volume

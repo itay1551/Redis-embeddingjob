@@ -1,5 +1,5 @@
 from typing import Optional
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStoreRetriever
 
