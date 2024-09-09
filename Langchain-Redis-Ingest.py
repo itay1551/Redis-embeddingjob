@@ -12,11 +12,10 @@
 # ### Base parameters, the Redis info
 
 
-from langchain.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-from langchain.vectorstores.redis import Redis
-from langchain.document_loaders import WebBaseLoader
+from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_community.document_loaders import WebBaseLoader
 import os
 from vector_db.db_provider_factory import DBFactory
 
