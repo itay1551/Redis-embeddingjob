@@ -1,0 +1,326 @@
+# PIPELINE DEFINITION
+# Name: main
+# Inputs:
+#    docs_location: str
+#    input_method: str
+#    repo_url: str
+#    urls: list
+components:
+  comp-condition-2:
+    dag:
+      tasks:
+        load-data-from-repo:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-load-data-from-repo
+          inputs:
+            parameters:
+              docs_location:
+                componentInputParameter: pipelinechannel--docs_location
+              repo_url:
+                componentInputParameter: pipelinechannel--repo_url
+          taskInfo:
+            name: load-data-from-repo
+    inputDefinitions:
+      parameters:
+        pipelinechannel--docs_location:
+          parameterType: STRING
+        pipelinechannel--input_method:
+          parameterType: STRING
+        pipelinechannel--repo_url:
+          parameterType: STRING
+  comp-condition-3:
+    dag:
+      tasks:
+        load-data-from-s3:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-load-data-from-s3
+          taskInfo:
+            name: load-data-from-s3
+    inputDefinitions:
+      parameters:
+        pipelinechannel--input_method:
+          parameterType: STRING
+  comp-condition-4:
+    dag:
+      tasks:
+        load-data-from-urls:
+          cachingOptions: {}
+          componentRef:
+            name: comp-load-data-from-urls
+          inputs:
+            parameters:
+              urls:
+                componentInputParameter: pipelinechannel--urls
+          taskInfo:
+            name: load-data-from-urls
+    inputDefinitions:
+      parameters:
+        pipelinechannel--input_method:
+          parameterType: STRING
+        pipelinechannel--urls:
+          parameterType: LIST
+  comp-condition-branches-1:
+    dag:
+      tasks:
+        condition-2:
+          componentRef:
+            name: comp-condition-2
+          inputs:
+            parameters:
+              pipelinechannel--docs_location:
+                componentInputParameter: pipelinechannel--docs_location
+              pipelinechannel--input_method:
+                componentInputParameter: pipelinechannel--input_method
+              pipelinechannel--repo_url:
+                componentInputParameter: pipelinechannel--repo_url
+          taskInfo:
+            name: condition-2
+          triggerPolicy:
+            condition: inputs.parameter_values['pipelinechannel--input_method'] ==
+              'repository'
+        condition-3:
+          componentRef:
+            name: comp-condition-3
+          inputs:
+            parameters:
+              pipelinechannel--input_method:
+                componentInputParameter: pipelinechannel--input_method
+          taskInfo:
+            name: condition-3
+          triggerPolicy:
+            condition: '!(inputs.parameter_values[''pipelinechannel--input_method'']
+              == ''repository'') && inputs.parameter_values[''pipelinechannel--input_method'']
+              == ''s3'''
+        condition-4:
+          componentRef:
+            name: comp-condition-4
+          inputs:
+            parameters:
+              pipelinechannel--input_method:
+                componentInputParameter: pipelinechannel--input_method
+              pipelinechannel--urls:
+                componentInputParameter: pipelinechannel--urls
+          taskInfo:
+            name: condition-4
+          triggerPolicy:
+            condition: '!(inputs.parameter_values[''pipelinechannel--input_method'']
+              == ''repository'') && !(inputs.parameter_values[''pipelinechannel--input_method'']
+              == ''s3'')'
+    inputDefinitions:
+      parameters:
+        pipelinechannel--docs_location:
+          parameterType: STRING
+        pipelinechannel--input_method:
+          parameterType: STRING
+        pipelinechannel--repo_url:
+          parameterType: STRING
+        pipelinechannel--urls:
+          parameterType: LIST
+  comp-load-data-from-repo:
+    executorLabel: exec-load-data-from-repo
+    inputDefinitions:
+      parameters:
+        docs_location:
+          parameterType: STRING
+        repo_url:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        out_data_path:
+          parameterType: STRING
+  comp-load-data-from-s3:
+    executorLabel: exec-load-data-from-s3
+    outputDefinitions:
+      parameters:
+        out_data_path:
+          parameterType: STRING
+  comp-load-data-from-urls:
+    executorLabel: exec-load-data-from-urls
+    inputDefinitions:
+      parameters:
+        urls:
+          parameterType: LIST
+    outputDefinitions:
+      parameters:
+        out_data_path:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-load-data-from-repo:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - load_data_from_repo
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
+          \ 'gitpython' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef load_data_from_repo(repo_url: str, docs_location: str, out_data_path:\
+          \ dsl.OutputPath(str)):\n    from langchain_community.document_loaders import\
+          \ PyPDFDirectoryLoader\n    from git import Repo\n\n    # repo_url = os.getenv('REPO_URL')\n\
+          \    # docs_location = os.getenv('REPO_DOC_LOCATION', '')\n    # Clone the\
+          \ repo to tmp_dir\n    repo_path = os.path.join('tmp_repo', 'source_repo')\n\
+          \n    try:\n        Repo.clone_from(repo_url, repo_path)\n    except Exception\
+          \ as e:\n        print(f'Cloning error: {e}')\n\n    docs_dir_path = os.path.join(repo_path,\
+          \ docs_location)\n    if not os.path.exists(docs_dir_path):\n        raise\
+          \ FileNotFoundError\n\n    # Load the files\n    loader = PyPDFDirectoryLoader(docs_dir_path)\n\
+          \    docs = loader.load()\n\n    save_docs(docs, out_data_path)\n\n"
+        image: registry.access.redhat.com/ubi9/python-311
+    exec-load-data-from-s3:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - load_data_from_s3
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'boto3' 'langchain-community'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef load_data_from_s3(out_data_path: dsl.OutputPath(str)):\n    import\
+          \ boto3\n    import os\n    from langchain_community.document_loaders import\
+          \ PyPDFLoader\n\n    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')\n\
+          \    aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')\n \
+          \   endpoint_url = os.environ.get('AWS_S3_ENDPOINT')\n    bucket_name =\
+          \ os.environ.get('AWS_S3_BUCKET')\n\n    # Set up the S3 client\n    s3\
+          \ = boto3.client('s3',\n                      endpoint_url=endpoint_url,\n\
+          \                      aws_access_key_id=aws_access_key_id,\n          \
+          \            aws_secret_access_key=aws_secret_access_key)\n\n    tmp_dir\
+          \ = 'tmp_s3'\n    os.makedirs(tmp_dir, exist_ok=True)\n\n    docs = []\n\
+          \    continuation_token = None\n    while True:\n        try:\n        \
+          \    # check for files in the bucket\n            if continuation_token:\n\
+          \                response: dict= s3.list_objects_v2(bucket=bucket_name,\
+          \ ContinuationToken=continuation_token)\n            else:\n           \
+          \     response: dict= s3.list_objects_v2(bucket=bucket_name)\n\n\n     \
+          \       for content in response.get('Contents', []):\n                key\
+          \ = content['key']\n                if not key.endswith('.pdf'):\n     \
+          \               continue\n\n                # download file from the bucket\n\
+          \                local_pdf_path = os.path.join(tmp_dir, key)\n         \
+          \       s3.download_file(bucket_name, key, local_pdf_path)\n\n         \
+          \       # Load and save the path\n                loader = PyPDFLoader(local_pdf_path)\n\
+          \                docs.append(loader.load())\n\n                # Remove\
+          \ the local file\n                os.remove(local_pdf_path)\n\n\n      \
+          \      # Check for more file\n            if response['IsTruncated']:\n\
+          \                continuation_token = response['NextContinuationToken']\n\
+          \            else:\n                break\n\n        except Exception as\
+          \ e:\n            print(e)\n\n    save_docs(docs, out_data_path)\n\n"
+        image: registry.access.redhat.com/ubi9/python-311
+    exec-load-data-from-urls:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - load_data_from_urls
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef load_data_from_urls(urls: List[str], out_data_path: dsl.OutputPath(str)):\n\
+          \    from langchain_community.document_loaders import WebBaseLoader\n\n\
+          \    # Load URLs\n    loader = WebBaseLoader(urls)\n    docs = loader.load()\n\
+          \n    save_docs(docs, out_data_path)\n\n"
+        image: registry.access.redhat.com/ubi9/python-311
+pipelineInfo:
+  name: main
+root:
+  dag:
+    tasks:
+      condition-branches-1:
+        componentRef:
+          name: comp-condition-branches-1
+        inputs:
+          parameters:
+            pipelinechannel--docs_location:
+              componentInputParameter: docs_location
+            pipelinechannel--input_method:
+              componentInputParameter: input_method
+            pipelinechannel--repo_url:
+              componentInputParameter: repo_url
+            pipelinechannel--urls:
+              componentInputParameter: urls
+        taskInfo:
+          name: condition-branches-1
+  inputDefinitions:
+    parameters:
+      docs_location:
+        parameterType: STRING
+      input_method:
+        parameterType: STRING
+      repo_url:
+        parameterType: STRING
+      urls:
+        parameterType: LIST
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.11.0
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-load-data-from-s3:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: AWS_ACCESS_KEY_ID
+              secretKey: AWS_ACCESS_KEY_ID
+            - envVar: AWS_SECRET_ACCESS_KEY
+              secretKey: AWS_SECRET_ACCESS_KEY
+            - envVar: AWS_S3_BUCKET
+              secretKey: AWS_S3_BUCKET
+            - envVar: AWS_S3_ENDPOINT
+              secretKey: AWS_S3_ENDPOINT
+            secretName: aws_secret

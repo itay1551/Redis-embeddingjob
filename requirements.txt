@@ -18,3 +18,4 @@ langchain-core==0.2.38; python_version < '4.0' and python_full_version >= '3.8.1
 langchain-elasticsearch==0.2.2; python_version < '4.0' and python_full_version >= '3.8.1'
 langchain-text-splitters==0.2.4; python_version < '4.0' and python_full_version >= '3.8.1'
 kfp
+kfp-kubernetes
