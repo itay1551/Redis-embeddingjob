@@ -4,22 +4,21 @@ import os
 from langchain_core.documents.base import Document
 from kfp import kubernetes
 
-DB_TYPE = 'DB_TYPE'
-IN_METHOD = 'IN_METHOD'
-AWS_SECRET = 'aws_secret'
-RAG_LLM_CM = 'rag_llm_cm'
+RAG_LLM_CM = 'config-pipeline'
 
-def save_docs(docs: List[Document], out_path: dsl.OutputPath(str)):
+def save_docs(docs: List[Document], out_path: str):
     import json
     with open(out_path, 'w') as f:
         json.dump(docs, f)
 
 # S3 bucket
 @dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['boto3', 'langchain-community'])
-def load_data_from_s3(out_data_path: dsl.OutputPath(str)):
+def load_data_from_s3(out_data_path: dsl.OutputPath()):
     import boto3
     import os
     from langchain_community.document_loaders import PyPDFLoader
+    import json
+    from langchain_core.load import dumpd
     
     aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -72,25 +71,27 @@ def load_data_from_s3(out_data_path: dsl.OutputPath(str)):
         except Exception as e:
             print(e)
     
-    save_docs(docs, out_data_path)
-
+    with open(out_data_path, 'w') as f:
+        json.dump([dumpd(doc) for doc in docs], f)
+        
     
 # Repository
-@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community', 'gitpython'])
-def load_data_from_repo(repo_url: str, docs_location: str, out_data_path: dsl.OutputPath(str)):
+@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community', 'gitpython', 'pypdf'])
+def load_data_from_repo(repo_url: str, docs_location: str, out_data_path: dsl.OutputPath()):
     from langchain_community.document_loaders import PyPDFDirectoryLoader
     from git import Repo
-    
-    # repo_url = os.getenv('REPO_URL')
-    # docs_location = os.getenv('REPO_DOC_LOCATION', '')
+    import os
+    import json
+    from langchain_core.load import dumpd
     # Clone the repo to tmp_dir
-    repo_path = os.path.join('tmp_repo', 'source_repo')
+    tmp_directory = 'tmp_repo'
+    repo_path = os.path.join(tmp_directory, 'source_repo')
     
     try:
         Repo.clone_from(repo_url, repo_path)
     except Exception as e:
         print(f'Cloning error: {e}')
-        
+
     docs_dir_path = os.path.join(repo_path, docs_location)
     if not os.path.exists(docs_dir_path):
         raise FileNotFoundError
@@ -99,31 +100,37 @@ def load_data_from_repo(repo_url: str, docs_location: str, out_data_path: dsl.Ou
     loader = PyPDFDirectoryLoader(docs_dir_path)
     docs = loader.load()
     
-    save_docs(docs, out_data_path)
+    # save_docs
+    with open(out_data_path, 'w') as f:
+            json.dump([dumpd(doc) for doc in docs], f)
 
 # URLs
-@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community'])
-def load_data_from_urls(urls: str, out_data_path: dsl.OutputPath(str)):
+@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community', 'bs4'])
+def load_data_from_urls(urls: List[str], out_data_path: dsl.OutputPath()):
     from langchain_community.document_loaders import WebBaseLoader
-    
+    import json
+    from langchain_core.load import dumpd
+        
     # Load URLs
     loader = WebBaseLoader(urls)
     docs = loader.load()
     
-    # save_docs(docs, out_data_path)
-    import json
+    # Save docs
     with open(out_data_path, 'w') as f:
-        json.dump(docs, f)
+            json.dump([dumpd(doc) for doc in docs], f)
 
-@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community'])
-def split_and_embed(input_docs_path: dsl.InputPath(str)):
+@dsl.component(base_image='registry.access.redhat.com/ubi9/python-311', packages_to_install=['langchain-community', 'langchain'])
+def split_and_embed(input_docs_path: dsl.InputPath()):
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     from vector_db.db_provider_factory import DBFactory
     import json
+    from langchain_core.load import load
+    import os
+    
     # Load docs
     with open(input_docs_path, 'r') as f:
         docs = json.load(f)
-    
+    docs = [load(doc) for doc in docs]
     # Split the documents
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1024,
@@ -133,43 +140,58 @@ def split_and_embed(input_docs_path: dsl.InputPath(str)):
     all_splits = text_splitter.split_documents(docs)
     
     # Indexing the VectorDB
-    db_type = os.getenv(DB_TYPE)
+    # TODO this is disgusting need to fix
+    pgvector_url= os.getenv('PGVECTOR_URL')
+    os.environ['PGVECTOR_URL'] = pgvector_url.replace('$(DB_PASS)', os.getenv('DB_PASS'))
+    
+    db_type = os.getenv('DB_TYPE')
     vector_db = DBFactory().create_db_provider(db_type)
     vector_db.add_documents(all_splits)
 
+def split_embed_pipeline(load_data_task):
+    cm_dict = {item: item for item in ['NAMESPACE', 'DB_TYPE', 'PGVECTOR_COLLECTION_NAME', 'PGVECTOR_URL', 'TRANSFORMERS_CACHE']}
+    
+    # Define component
+    split_and_embed_task = split_and_embed(input_docs_path=load_data_task.outputs['out_data_path']).after(load_data_task)
+    # Component configurations
+    split_and_embed_task.set_caching_options(False)
+    kubernetes.use_secret_as_env(
+        task=split_and_embed_task,
+        secret_name='vectordb', 
+        secret_key_to_env={'password': 'DB_PASS'}
+        )
+    kubernetes.use_config_map_as_env(split_and_embed_task, 
+                                 config_map_name=RAG_LLM_CM,
+                                 config_map_key_to_env=cm_dict)
+        
 @dsl.pipeline(name=os.path.basename(__file__).replace('.py', ''))
-def rag_llm_pipeline(input_method: str, repo_url: str, docs_location: str, urls: str):
-    # input_method = os.getenv(IN_METHOD) #TODO Can I get it?
+def rag_llm_pipeline(input_method: str, repo_url: str, docs_location: str, urls: List[str]):
     
     # Load the data
     with dsl.If(input_method == 'repository'):
         load_data_task = load_data_from_repo(repo_url=repo_url, docs_location=docs_location)
+        load_data_task.set_caching_options(False)
+        # Split embed
+        split_embed_pipeline(load_data_task)
     with dsl.Elif(input_method == 's3'):
-        load_data_task = load_data_from_s3()     
+        load_data_task = load_data_from_s3()
         kubernetes.use_secret_as_env(
-            task=load_data_task,
-            secret_name=AWS_SECRET, # TODO change the secret name 
-            secret_key_to_env={
-                'AWS_ACCESS_KEY_ID': 'AWS_ACCESS_KEY_ID',
-                'AWS_SECRET_ACCESS_KEY': 'AWS_SECRET_ACCESS_KEY',
-                'AWS_S3_BUCKET': 'AWS_S3_BUCKET',
-                'AWS_S3_ENDPOINT': 'AWS_S3_ENDPOINT'}
-            )
-    # with dsl.Elif(input_method == 'urls'):
-    with dsl.Else():
+        task=load_data_task,
+        secret_name='vectordb', # TODO which secret?
+        secret_key_to_env={item: item for item in ['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_S3_ENDPOINT','AWS_S3_BUCKET',]}
+        )
+        load_data_task.set_caching_options(False)
+        # Split embed
+        split_embed_pipeline(load_data_task)
+    with dsl.Elif(input_method == 'urls'):
         load_data_task = load_data_from_urls(urls=urls)
-    # print(load_data_task.outputs['out_data'])
-    load_data_task.set_caching_options(False)
-    # kubernetes.use_config_map_as_env(load_data_task,
-    #                              config_map_name=RAG_LLM_CM,
-    #                              config_map_key_to_env={'foo': 'CM_VAR'}) # TODO
-    # Split embed
-    split_and_embed_task = split_and_embed(input_docs_path=load_data_task.outputs['out_data_path'])
-    # split_and_embed_task = split_and_embed()
-    split_and_embed_task.set_caching_options(False)
+        load_data_task.set_caching_options(False)
+        # Split embed
+        split_embed_pipeline(load_data_task)
 
 if __name__ == '__main__':
     compiler.Compiler().compile(
         pipeline_func=rag_llm_pipeline,
-        package_path=__file__.replace('.py', '.yaml')
+        package_path=__file__.replace('.py', '.yaml'),
+        
     )
