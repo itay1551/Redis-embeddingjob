@@ -9,6 +9,3 @@ data:
   PGVECTOR_URL: "postgresql+psycopg://vectordb:$(DB_PASS)@postgresql-service:5432/vectordb"
   TRANSFORMERS_CACHE: "/cache/.cache"
   SENTENCE_TRANSFORMERS_HOME: "/cache/.cache"
----
-apiVersion:
-kind: 

@@ -1,24 +1,18 @@
 # PIPELINE DEFINITION
 # Name: main
 # Inputs:
-#    docs_location: str
-#    input_method: str
-#    repo_url: str
-#    urls: list
+#    TODO_must_update_secret_ds_pipeline_config_llm_rag: str [Default: '']
+#    is_load_from_repo: bool
+#    is_load_from_s3: bool
+#    is_load_from_urls: bool
 components:
-  comp-condition-2:
+  comp-condition-1:
     dag:
       tasks:
         load-data-from-repo:
           cachingOptions: {}
           componentRef:
             name: comp-load-data-from-repo
-          inputs:
-            parameters:
-              docs_location:
-                componentInputParameter: pipelinechannel--docs_location
-              repo_url:
-                componentInputParameter: pipelinechannel--repo_url
           taskInfo:
             name: load-data-from-repo
         split-and-embed:
@@ -37,13 +31,9 @@ components:
             name: split-and-embed
     inputDefinitions:
       parameters:
-        pipelinechannel--docs_location:
-          parameterType: STRING
-        pipelinechannel--input_method:
-          parameterType: STRING
-        pipelinechannel--repo_url:
-          parameterType: STRING
-  comp-condition-3:
+        pipelinechannel--is_load_from_repo:
+          parameterType: BOOLEAN
+  comp-condition-2:
     dag:
       tasks:
         load-data-from-s3:
@@ -68,19 +58,15 @@ components:
             name: split-and-embed-2
     inputDefinitions:
       parameters:
-        pipelinechannel--input_method:
-          parameterType: STRING
-  comp-condition-4:
+        pipelinechannel--is_load_from_s3:
+          parameterType: BOOLEAN
+  comp-condition-3:
     dag:
       tasks:
         load-data-from-urls:
           cachingOptions: {}
           componentRef:
             name: comp-load-data-from-urls
-          inputs:
-            parameters:
-              urls:
-                componentInputParameter: pipelinechannel--urls
           taskInfo:
             name: load-data-from-urls
         split-and-embed-3:
@@ -99,76 +85,10 @@ components:
             name: split-and-embed-3
     inputDefinitions:
       parameters:
-        pipelinechannel--input_method:
-          parameterType: STRING
-        pipelinechannel--urls:
-          parameterType: LIST
-  comp-condition-branches-1:
-    dag:
-      tasks:
-        condition-2:
-          componentRef:
-            name: comp-condition-2
-          inputs:
-            parameters:
-              pipelinechannel--docs_location:
-                componentInputParameter: pipelinechannel--docs_location
-              pipelinechannel--input_method:
-                componentInputParameter: pipelinechannel--input_method
-              pipelinechannel--repo_url:
-                componentInputParameter: pipelinechannel--repo_url
-          taskInfo:
-            name: condition-2
-          triggerPolicy:
-            condition: inputs.parameter_values['pipelinechannel--input_method'] ==
-              'repository'
-        condition-3:
-          componentRef:
-            name: comp-condition-3
-          inputs:
-            parameters:
-              pipelinechannel--input_method:
-                componentInputParameter: pipelinechannel--input_method
-          taskInfo:
-            name: condition-3
-          triggerPolicy:
-            condition: '!(inputs.parameter_values[''pipelinechannel--input_method'']
-              == ''repository'') && inputs.parameter_values[''pipelinechannel--input_method'']
-              == ''s3'''
-        condition-4:
-          componentRef:
-            name: comp-condition-4
-          inputs:
-            parameters:
-              pipelinechannel--input_method:
-                componentInputParameter: pipelinechannel--input_method
-              pipelinechannel--urls:
-                componentInputParameter: pipelinechannel--urls
-          taskInfo:
-            name: condition-4
-          triggerPolicy:
-            condition: '!(inputs.parameter_values[''pipelinechannel--input_method'']
-              == ''repository'') && !(inputs.parameter_values[''pipelinechannel--input_method'']
-              == ''s3'') && inputs.parameter_values[''pipelinechannel--input_method'']
-              == ''urls'''
-    inputDefinitions:
-      parameters:
-        pipelinechannel--docs_location:
-          parameterType: STRING
-        pipelinechannel--input_method:
-          parameterType: STRING
-        pipelinechannel--repo_url:
-          parameterType: STRING
-        pipelinechannel--urls:
-          parameterType: LIST
+        pipelinechannel--is_load_from_urls:
+          parameterType: BOOLEAN
   comp-load-data-from-repo:
     executorLabel: exec-load-data-from-repo
-    inputDefinitions:
-      parameters:
-        docs_location:
-          parameterType: STRING
-        repo_url:
-          parameterType: STRING
     outputDefinitions:
       artifacts:
         out_data_path:
@@ -185,10 +105,6 @@ components:
             schemaVersion: 0.0.1
   comp-load-data-from-urls:
     executorLabel: exec-load-data-from-urls
-    inputDefinitions:
-      parameters:
-        urls:
-          parameterType: LIST
     outputDefinitions:
       artifacts:
         out_data_path:
@@ -248,15 +164,18 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data_from_repo(repo_url: str, docs_location: str, out_data_path:\
-          \ dsl.OutputPath()):\n    from langchain_community.document_loaders import\
-          \ PyPDFDirectoryLoader\n    from git import Repo\n    import os\n    import\
-          \ json\n    from langchain_core.load import dumpd\n    # Clone the repo\
-          \ to tmp_dir\n    tmp_directory = 'tmp_repo'\n    repo_path = os.path.join(tmp_directory,\
-          \ 'source_repo')\n\n    try:\n        Repo.clone_from(repo_url, repo_path)\n\
-          \    except Exception as e:\n        print(f'Cloning error: {e}')\n\n  \
-          \  docs_dir_path = os.path.join(repo_path, docs_location)\n    if not os.path.exists(docs_dir_path):\n\
-          \        raise FileNotFoundError\n\n    # Load the files\n    loader = PyPDFDirectoryLoader(docs_dir_path)\n\
+          \ *\n\ndef load_data_from_repo(out_data_path: dsl.OutputPath()):\n    from\
+          \ langchain_community.document_loaders import PyPDFDirectoryLoader\n   \
+          \ from git import Repo\n    import os\n    import json\n    from langchain_core.load\
+          \ import dumpd\n    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('REPO_CONFIG'))\n\
+          \    print(env_dict)\n    for key, value in env_dict.items():\n        os.environ[key]\
+          \ = value\n    # Clone the repo to tmp_dir\n    repo_url = os.getenv('REPO_URL')\n\
+          \    docs_location = os.getenv('DOC_LOCATION')\n    tmp_directory = 'tmp_repo'\n\
+          \    repo_path = os.path.join(tmp_directory, 'source_repo')\n\n    try:\n\
+          \        Repo.clone_from(repo_url, repo_path)\n    except Exception as e:\n\
+          \        print(f'Cloning error: {e}')\n\n    docs_dir_path = os.path.join(repo_path,\
+          \ docs_location)\n    if not os.path.exists(docs_dir_path):\n        raise\
+          \ FileNotFoundError\n\n    # Load the files\n    loader = PyPDFDirectoryLoader(docs_dir_path)\n\
           \    docs = loader.load()\n\n    # save_docs\n    with open(out_data_path,\
           \ 'w') as f:\n            json.dump([dumpd(doc) for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
@@ -275,7 +194,7 @@ deploymentSpec:
           \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
           \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
           \  python3 -m pip install --quiet --no-warn-script-location 'boto3' 'langchain-community'\
-          \ && \"$0\" \"$@\"\n"
+          \ 'pypdf' && \"$0\" \"$@\"\n"
         - sh
         - -ec
         - 'program_path=$(mktemp -d)
@@ -290,31 +209,36 @@ deploymentSpec:
           \ *\n\ndef load_data_from_s3(out_data_path: dsl.OutputPath()):\n    import\
           \ boto3\n    import os\n    from langchain_community.document_loaders import\
           \ PyPDFLoader\n    import json\n    from langchain_core.load import dumpd\n\
-          \n    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')\n    aws_secret_access_key\
-          \ = os.environ.get('AWS_SECRET_ACCESS_KEY')\n    endpoint_url = os.environ.get('AWS_S3_ENDPOINT')\n\
-          \    bucket_name = os.environ.get('AWS_S3_BUCKET')\n\n    # Set up the S3\
-          \ client\n    s3 = boto3.client('s3',\n                      endpoint_url=endpoint_url,\n\
-          \                      aws_access_key_id=aws_access_key_id,\n          \
-          \            aws_secret_access_key=aws_secret_access_key)\n\n    tmp_dir\
-          \ = 'tmp_s3'\n    os.makedirs(tmp_dir, exist_ok=True)\n\n    docs = []\n\
-          \    continuation_token = None\n    while True:\n        try:\n        \
-          \    # check for files in the bucket\n            if continuation_token:\n\
-          \                response: dict= s3.list_objects_v2(bucket=bucket_name,\
-          \ ContinuationToken=continuation_token)\n            else:\n           \
-          \     response: dict= s3.list_objects_v2(bucket=bucket_name)\n\n\n     \
-          \       for content in response.get('Contents', []):\n                key\
-          \ = content['key']\n                if not key.endswith('.pdf'):\n     \
-          \               continue\n\n                # download file from the bucket\n\
-          \                local_pdf_path = os.path.join(tmp_dir, key)\n         \
-          \       s3.download_file(bucket_name, key, local_pdf_path)\n\n         \
-          \       # Load and save the path\n                loader = PyPDFLoader(local_pdf_path)\n\
+          \    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('S3_CONFIG'))\n\
+          \    for key, value in env_dict.items():\n        os.environ[key] = value\n\
+          \    print(env_dict)\n    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')\n\
+          \    aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')\n \
+          \   endpoint_url = os.environ.get('AWS_S3_ENDPOINT')\n    bucket_name =\
+          \ os.environ.get('AWS_S3_BUCKET')\n    folder_path = os.environ.get('AWS_S3_FOLDER_PATH')\n\
+          \n    # Set up the S3 client\n    s3 = boto3.client('s3',\n            \
+          \          endpoint_url=endpoint_url,\n                      aws_access_key_id=aws_access_key_id,\n\
+          \                      aws_secret_access_key=aws_secret_access_key)\n\n\
+          \    tmp_dir = 'tmp_s3'\n    os.makedirs(tmp_dir, exist_ok=True)\n\n   \
+          \ docs = []\n    continuation_token = None\n    while True:\n        try:\n\
+          \            # check for files in the bucket\n            if continuation_token:\n\
+          \                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
+          \ Prefix=folder_path + '/',ContinuationToken=continuation_token)\n     \
+          \       else:\n                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
+          \ Prefix=folder_path + '/')\n            print(response)\n\n           \
+          \ for content in response.get('Contents', []):\n                key = content['Key']\n\
+          \                if not key.endswith('.pdf'):\n                    continue\n\
+          \                print(key)\n                # download file from the bucket\n\
+          \                local_pdf_path = os.path.join(tmp_dir, key.split('/')[-1])\n\
+          \                s3.download_file(bucket_name, key, local_pdf_path)\n\n\
+          \                # Load and save the path\n                loader = PyPDFLoader(local_pdf_path)\n\
           \                docs.append(loader.load())\n\n                # Remove\
           \ the local file\n                os.remove(local_pdf_path)\n\n\n      \
           \      # Check for more file\n            if response['IsTruncated']:\n\
           \                continuation_token = response['NextContinuationToken']\n\
-          \            else:\n                break\n\n        except Exception as\
-          \ e:\n            print(e)\n\n    with open(out_data_path, 'w') as f:\n\
-          \        json.dump([dumpd(doc) for doc in docs], f)\n\n"
+          \            else:\n                print('breaking')\n                break\n\
+          \n        except Exception as e:\n            print(f'ERROR: {e}')\n   \
+          \         break\n\n    with open(out_data_path, 'w') as f:\n        json.dump([dumpd(doc)\
+          \ for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
     exec-load-data-from-urls:
       container:
@@ -343,11 +267,12 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data_from_urls(urls: List[str], out_data_path: dsl.OutputPath()):\n\
-          \    from langchain_community.document_loaders import WebBaseLoader\n  \
-          \  import json\n    from langchain_core.load import dumpd\n\n    # Load\
-          \ URLs\n    loader = WebBaseLoader(urls)\n    docs = loader.load()\n\n \
-          \   # Save docs\n    with open(out_data_path, 'w') as f:\n            json.dump([dumpd(doc)\
+          \ *\n\ndef load_data_from_urls(out_data_path: dsl.OutputPath()):\n    from\
+          \ langchain_community.document_loaders import WebBaseLoader\n    import\
+          \ json\n    from langchain_core.load import dumpd\n    import ast\n    import\
+          \ os\n    # Load URLs\n    urls: List[str]= ast.literal_eval(os.getenv('URLS_CONFIG'))['URLS_ARRAY']\n\
+          \    loader = WebBaseLoader(urls)\n    docs = loader.load()\n\n    # Save\
+          \ docs\n    with open(out_data_path, 'w') as f:\n            json.dump([dumpd(doc)\
           \ for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
     exec-split-and-embed:
@@ -380,17 +305,21 @@ deploymentSpec:
           \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
           \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
           \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n\n    # Load docs\n  \
-          \  with open(input_docs_path, 'r') as f:\n        docs = json.load(f)\n\
-          \    docs = [load(doc) for doc in docs]\n    # Split the documents\n   \
-          \ text_splitter = RecursiveCharacterTextSplitter(\n        chunk_size=1024,\n\
-          \        chunk_overlap=40,\n        length_function=len,\n    )\n    all_splits\
-          \ = text_splitter.split_documents(docs)\n\n    # Indexing the VectorDB\n\
-          \    # TODO this is disgusting need to fix\n    pgvector_url= os.getenv('PGVECTOR_URL')\n\
-          \    os.environ['PGVECTOR_URL'] = pgvector_url.replace('$(DB_PASS)', os.getenv('DB_PASS'))\n\
-          \n    db_type = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n"
-        image: registry.access.redhat.com/ubi9/python-311
+          \ langchain_core.load import load\n    import os\n    import ast\n    for\
+          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
+          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
+          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
+          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
+          \n"
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
     exec-split-and-embed-2:
       container:
         args:
@@ -421,17 +350,21 @@ deploymentSpec:
           \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
           \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
           \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n\n    # Load docs\n  \
-          \  with open(input_docs_path, 'r') as f:\n        docs = json.load(f)\n\
-          \    docs = [load(doc) for doc in docs]\n    # Split the documents\n   \
-          \ text_splitter = RecursiveCharacterTextSplitter(\n        chunk_size=1024,\n\
-          \        chunk_overlap=40,\n        length_function=len,\n    )\n    all_splits\
-          \ = text_splitter.split_documents(docs)\n\n    # Indexing the VectorDB\n\
-          \    # TODO this is disgusting need to fix\n    pgvector_url= os.getenv('PGVECTOR_URL')\n\
-          \    os.environ['PGVECTOR_URL'] = pgvector_url.replace('$(DB_PASS)', os.getenv('DB_PASS'))\n\
-          \n    db_type = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n"
-        image: registry.access.redhat.com/ubi9/python-311
+          \ langchain_core.load import load\n    import os\n    import ast\n    for\
+          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
+          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
+          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
+          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
+          \n"
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
     exec-split-and-embed-3:
       container:
         args:
@@ -462,47 +395,74 @@ deploymentSpec:
           \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
           \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
           \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n\n    # Load docs\n  \
-          \  with open(input_docs_path, 'r') as f:\n        docs = json.load(f)\n\
-          \    docs = [load(doc) for doc in docs]\n    # Split the documents\n   \
-          \ text_splitter = RecursiveCharacterTextSplitter(\n        chunk_size=1024,\n\
-          \        chunk_overlap=40,\n        length_function=len,\n    )\n    all_splits\
-          \ = text_splitter.split_documents(docs)\n\n    # Indexing the VectorDB\n\
-          \    # TODO this is disgusting need to fix\n    pgvector_url= os.getenv('PGVECTOR_URL')\n\
-          \    os.environ['PGVECTOR_URL'] = pgvector_url.replace('$(DB_PASS)', os.getenv('DB_PASS'))\n\
-          \n    db_type = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n"
-        image: registry.access.redhat.com/ubi9/python-311
+          \ langchain_core.load import load\n    import os\n    import ast\n    for\
+          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
+          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
+          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
+          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
+          \n"
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
 pipelineInfo:
   name: main
 root:
   dag:
     tasks:
-      condition-branches-1:
+      condition-1:
         componentRef:
-          name: comp-condition-branches-1
+          name: comp-condition-1
         inputs:
           parameters:
-            pipelinechannel--docs_location:
-              componentInputParameter: docs_location
-            pipelinechannel--input_method:
-              componentInputParameter: input_method
-            pipelinechannel--repo_url:
-              componentInputParameter: repo_url
-            pipelinechannel--urls:
-              componentInputParameter: urls
+            pipelinechannel--is_load_from_repo:
+              componentInputParameter: is_load_from_repo
         taskInfo:
-          name: condition-branches-1
+          name: condition-1
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--is_load_from_repo']
+            == true
+      condition-2:
+        componentRef:
+          name: comp-condition-2
+        inputs:
+          parameters:
+            pipelinechannel--is_load_from_s3:
+              componentInputParameter: is_load_from_s3
+        taskInfo:
+          name: condition-2
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--is_load_from_s3'] ==
+            true
+      condition-3:
+        componentRef:
+          name: comp-condition-3
+        inputs:
+          parameters:
+            pipelinechannel--is_load_from_urls:
+              componentInputParameter: is_load_from_urls
+        taskInfo:
+          name: condition-3
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--is_load_from_urls']
+            == true
   inputDefinitions:
     parameters:
-      docs_location:
+      TODO_must_update_secret_ds_pipeline_config_llm_rag:
+        defaultValue: ''
+        isOptional: true
         parameterType: STRING
-      input_method:
-        parameterType: STRING
-      repo_url:
-        parameterType: STRING
-      urls:
-        parameterType: LIST
+      is_load_from_repo:
+        parameterType: BOOLEAN
+      is_load_from_s3:
+        parameterType: BOOLEAN
+      is_load_from_urls:
+        parameterType: BOOLEAN
 schemaVersion: 2.1.0
 sdkVersion: kfp-2.11.0
 ---
@@ -510,72 +470,45 @@ platforms:
   kubernetes:
     deploymentSpec:
       executors:
+        exec-load-data-from-repo:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: REPO_CONFIG
+              secretKey: REPO_CONFIG
+            secretName: ds-pipeline-config-llm-rag
         exec-load-data-from-s3:
           secretAsEnv:
           - keyToEnv:
-            - envVar: AWS_ACCESS_KEY_ID
-              secretKey: AWS_ACCESS_KEY_ID
-            - envVar: AWS_SECRET_ACCESS_KEY
-              secretKey: AWS_SECRET_ACCESS_KEY
-            - envVar: AWS_S3_ENDPOINT
-              secretKey: AWS_S3_ENDPOINT
-            - envVar: AWS_S3_BUCKET
-              secretKey: AWS_S3_BUCKET
-            secretName: vectordb
+            - envVar: S3_CONFIG
+              secretKey: S3_CONFIG
+            secretName: ds-pipeline-config-llm-rag
+        exec-load-data-from-urls:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: URLS_CONFIG
+              secretKey: URLS_CONFIG
+            secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed:
-          configMapAsEnv:
-          - configMapName: config-pipeline
-            keyToEnv:
-            - configMapKey: NAMESPACE
-              envVar: NAMESPACE
-            - configMapKey: DB_TYPE
-              envVar: DB_TYPE
-            - configMapKey: PGVECTOR_COLLECTION_NAME
-              envVar: PGVECTOR_COLLECTION_NAME
-            - configMapKey: PGVECTOR_URL
-              envVar: PGVECTOR_URL
-            - configMapKey: TRANSFORMERS_CACHE
-              envVar: TRANSFORMERS_CACHE
           secretAsEnv:
           - keyToEnv:
-            - envVar: DB_PASS
-              secretKey: password
-            secretName: vectordb
+            - envVar: EMBED_CONF
+              secretKey: EMBED_CONF
+            - envVar: DB_CONF
+              secretKey: DB_CONF
+            secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-2:
-          configMapAsEnv:
-          - configMapName: config-pipeline
-            keyToEnv:
-            - configMapKey: NAMESPACE
-              envVar: NAMESPACE
-            - configMapKey: DB_TYPE
-              envVar: DB_TYPE
-            - configMapKey: PGVECTOR_COLLECTION_NAME
-              envVar: PGVECTOR_COLLECTION_NAME
-            - configMapKey: PGVECTOR_URL
-              envVar: PGVECTOR_URL
-            - configMapKey: TRANSFORMERS_CACHE
-              envVar: TRANSFORMERS_CACHE
           secretAsEnv:
           - keyToEnv:
-            - envVar: DB_PASS
-              secretKey: password
-            secretName: vectordb
+            - envVar: EMBED_CONF
+              secretKey: EMBED_CONF
+            - envVar: DB_CONF
+              secretKey: DB_CONF
+            secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-3:
-          configMapAsEnv:
-          - configMapName: config-pipeline
-            keyToEnv:
-            - configMapKey: NAMESPACE
-              envVar: NAMESPACE
-            - configMapKey: DB_TYPE
-              envVar: DB_TYPE
-            - configMapKey: PGVECTOR_COLLECTION_NAME
-              envVar: PGVECTOR_COLLECTION_NAME
-            - configMapKey: PGVECTOR_URL
-              envVar: PGVECTOR_URL
-            - configMapKey: TRANSFORMERS_CACHE
-              envVar: TRANSFORMERS_CACHE
           secretAsEnv:
           - keyToEnv:
-            - envVar: DB_PASS
-              secretKey: password
-            secretName: vectordb
+            - envVar: EMBED_CONF
+              secretKey: EMBED_CONF
+            - envVar: DB_CONF
+              secretKey: DB_CONF
+            secretName: ds-pipeline-config-llm-rag
