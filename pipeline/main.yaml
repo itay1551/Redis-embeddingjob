@@ -20,7 +20,7 @@ components:
           componentRef:
             name: comp-split-and-embed
           dependentTasks:
-          - load-data-from-repo
+            - load-data-from-repo
           inputs:
             artifacts:
               input_docs_path:
@@ -47,7 +47,7 @@ components:
           componentRef:
             name: comp-split-and-embed-2
           dependentTasks:
-          - load-data-from-s3
+            - load-data-from-s3
           inputs:
             artifacts:
               input_docs_path:
@@ -74,7 +74,7 @@ components:
           componentRef:
             name: comp-split-and-embed-3
           dependentTasks:
-          - load-data-from-urls
+            - load-data-from-urls
           inputs:
             artifacts:
               input_docs_path:
@@ -140,276 +140,258 @@ deploymentSpec:
     exec-load-data-from-repo:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - load_data_from_repo
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - load_data_from_repo
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
-          \ 'gitpython' 'pypdf' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+            \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
+            \ 'gitpython' 'pypdf' && \"$0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data_from_repo(out_data_path: dsl.OutputPath()):\n    from\
-          \ langchain_community.document_loaders import PyPDFDirectoryLoader\n   \
-          \ from git import Repo\n    import os\n    import json\n    from langchain_core.load\
-          \ import dumpd\n    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('REPO_CONFIG'))\n\
-          \    print(env_dict)\n    for key, value in env_dict.items():\n        os.environ[key]\
-          \ = value\n    # Clone the repo to tmp_dir\n    repo_url = os.getenv('REPO_URL')\n\
-          \    docs_location = os.getenv('DOC_LOCATION')\n    tmp_directory = 'tmp_repo'\n\
-          \    repo_path = os.path.join(tmp_directory, 'source_repo')\n\n    try:\n\
-          \        Repo.clone_from(repo_url, repo_path)\n    except Exception as e:\n\
-          \        print(f'Cloning error: {e}')\n\n    docs_dir_path = os.path.join(repo_path,\
-          \ docs_location)\n    if not os.path.exists(docs_dir_path):\n        raise\
-          \ FileNotFoundError\n\n    # Load the files\n    loader = PyPDFDirectoryLoader(docs_dir_path)\n\
-          \    docs = loader.load()\n\n    # save_docs\n    with open(out_data_path,\
-          \ 'w') as f:\n            json.dump([dumpd(doc) for doc in docs], f)\n\n"
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef load_data_from_repo(out_data_path: dsl.OutputPath()):\n    from\
+            \ langchain_community.document_loaders import PyPDFDirectoryLoader\n   \
+            \ from git import Repo\n    import os\n    import json\n    from langchain_core.load\
+            \ import dumpd\n    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('REPO_CONFIG'))\n\
+            \    for key, value in env_dict.items():\n        os.environ[key] = value\n\
+            \    # Clone the repo to tmp_dir\n    repo_url = os.getenv('REPO_URL')\n\
+            \    docs_location = os.getenv('DOC_LOCATION')\n    tmp_directory = 'tmp_repo'\n\
+            \    repo_path = os.path.join(tmp_directory, 'source_repo')\n\n    try:\n\
+            \        Repo.clone_from(repo_url, repo_path)\n    except Exception as e:\n\
+            \        print(f'Cloning error: {e}')\n\n    docs_dir_path = os.path.join(repo_path,\
+            \ docs_location)\n    if not os.path.exists(docs_dir_path):\n        raise\
+            \ FileNotFoundError\n\n    # Load the files\n    loader = PyPDFDirectoryLoader(docs_dir_path)\n\
+            \    docs = loader.load()\n\n    # save_docs\n    with open(out_data_path,\
+            \ 'w') as f:\n            json.dump([dumpd(doc) for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
     exec-load-data-from-s3:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - load_data_from_s3
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - load_data_from_s3
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'boto3' 'langchain-community'\
-          \ 'pypdf' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+            \  python3 -m pip install --quiet --no-warn-script-location 'boto3' 'langchain-community'\
+            \ 'pypdf' && \"$0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data_from_s3(out_data_path: dsl.OutputPath()):\n    import\
-          \ boto3\n    import os\n    from langchain_community.document_loaders import\
-          \ PyPDFLoader\n    import json\n    from langchain_core.load import dumpd\n\
-          \    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('S3_CONFIG'))\n\
-          \    for key, value in env_dict.items():\n        os.environ[key] = value\n\
-          \    print(env_dict)\n    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')\n\
-          \    aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')\n \
-          \   endpoint_url = os.environ.get('AWS_S3_ENDPOINT')\n    bucket_name =\
-          \ os.environ.get('AWS_S3_BUCKET')\n    folder_path = os.environ.get('AWS_S3_FOLDER_PATH')\n\
-          \n    # Set up the S3 client\n    s3 = boto3.client('s3',\n            \
-          \          endpoint_url=endpoint_url,\n                      aws_access_key_id=aws_access_key_id,\n\
-          \                      aws_secret_access_key=aws_secret_access_key)\n\n\
-          \    tmp_dir = 'tmp_s3'\n    os.makedirs(tmp_dir, exist_ok=True)\n\n   \
-          \ docs = []\n    continuation_token = None\n    while True:\n        try:\n\
-          \            # check for files in the bucket\n            if continuation_token:\n\
-          \                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
-          \ Prefix=folder_path + '/',ContinuationToken=continuation_token)\n     \
-          \       else:\n                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
-          \ Prefix=folder_path + '/')\n            print(response)\n\n           \
-          \ for content in response.get('Contents', []):\n                key = content['Key']\n\
-          \                if not key.endswith('.pdf'):\n                    continue\n\
-          \                print(key)\n                # download file from the bucket\n\
-          \                local_pdf_path = os.path.join(tmp_dir, key.split('/')[-1])\n\
-          \                s3.download_file(bucket_name, key, local_pdf_path)\n\n\
-          \                # Load and save the path\n                loader = PyPDFLoader(local_pdf_path)\n\
-          \                docs.append(loader.load())\n\n                # Remove\
-          \ the local file\n                os.remove(local_pdf_path)\n\n\n      \
-          \      # Check for more file\n            if response['IsTruncated']:\n\
-          \                continuation_token = response['NextContinuationToken']\n\
-          \            else:\n                print('breaking')\n                break\n\
-          \n        except Exception as e:\n            print(f'ERROR: {e}')\n   \
-          \         break\n\n    with open(out_data_path, 'w') as f:\n        json.dump([dumpd(doc)\
-          \ for doc in docs], f)\n\n"
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef load_data_from_s3(out_data_path: dsl.OutputPath()):\n    import\
+            \ boto3\n    import os\n    from langchain_community.document_loaders import\
+            \ PyPDFLoader\n    import json\n    from langchain_core.load import dumpd\n\
+            \    import ast\n    env_dict: dict= ast.literal_eval(os.getenv('S3_CONFIG'))\n\
+            \    for key, value in env_dict.items():\n        os.environ[key] = value\n\
+            \    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')\n    aws_secret_access_key\
+            \ = os.environ.get('AWS_SECRET_ACCESS_KEY')\n    endpoint_url = os.environ.get('AWS_S3_ENDPOINT')\n\
+            \    bucket_name = os.environ.get('AWS_S3_BUCKET')\n    folder_path = os.environ.get('AWS_S3_FOLDER_PATH')\n\
+            \n    # Set up the S3 client\n    s3 = boto3.client('s3',\n            \
+            \          endpoint_url=endpoint_url,\n                      aws_access_key_id=aws_access_key_id,\n\
+            \                      aws_secret_access_key=aws_secret_access_key)\n\n\
+            \    tmp_dir = 'tmp_s3'\n    os.makedirs(tmp_dir, exist_ok=True)\n\n   \
+            \ docs = []\n    continuation_token = None\n    while True:\n        try:\n\
+            \            # check for files in the bucket\n            if continuation_token:\n\
+            \                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
+            \ Prefix=folder_path + '/',ContinuationToken=continuation_token)\n     \
+            \       else:\n                response: dict= s3.list_objects_v2(Bucket=bucket_name,\
+            \ Prefix=folder_path + '/')\n\n            for content in response.get('Contents',\
+            \ []):\n                key = content['Key']\n                if not key.endswith('.pdf'):\n\
+            \                    continue\n                # download file from the\
+            \ bucket\n                local_pdf_path = os.path.join(tmp_dir, key.split('/')[-1])\n\
+            \                s3.download_file(bucket_name, key, local_pdf_path)\n\n\
+            \                # Load and save the path\n                loader = PyPDFLoader(local_pdf_path)\n\
+            \                docs.append(loader.load())\n\n                # Remove\
+            \ the local file\n                os.remove(local_pdf_path)\n\n\n      \
+            \      # Check for more file\n            if response['IsTruncated']:\n\
+            \                continuation_token = response['NextContinuationToken']\n\
+            \            else:\n                break\n\n        except Exception as\
+            \ e:\n            print(f'ERROR: {e}')\n            break\n\n    with open(out_data_path,\
+            \ 'w') as f:\n        json.dump([dumpd(doc) for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
     exec-load-data-from-urls:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - load_data_from_urls
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - load_data_from_urls
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
-          \ 'bs4' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+            \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
+            \ 'bs4' && \"$0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data_from_urls(out_data_path: dsl.OutputPath()):\n    from\
-          \ langchain_community.document_loaders import WebBaseLoader\n    import\
-          \ json\n    from langchain_core.load import dumpd\n    import ast\n    import\
-          \ os\n    # Load URLs\n    urls: List[str]= ast.literal_eval(os.getenv('URLS_CONFIG'))['URLS_ARRAY']\n\
-          \    loader = WebBaseLoader(urls)\n    docs = loader.load()\n\n    # Save\
-          \ docs\n    with open(out_data_path, 'w') as f:\n            json.dump([dumpd(doc)\
-          \ for doc in docs], f)\n\n"
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef load_data_from_urls(out_data_path: dsl.OutputPath()):\n    from\
+            \ langchain_community.document_loaders import WebBaseLoader\n    import\
+            \ json\n    from langchain_core.load import dumpd\n    import ast\n    import\
+            \ os\n    # Load URLs\n    urls: List[str]= ast.literal_eval(os.getenv('URLS_CONFIG'))['URLS_ARRAY']\n\
+            \    loader = WebBaseLoader(urls)\n    docs = loader.load()\n\n    # Save\
+            \ docs\n    with open(out_data_path, 'w') as f:\n            json.dump([dumpd(doc)\
+            \ for doc in docs], f)\n\n"
         image: registry.access.redhat.com/ubi9/python-311
     exec-split-and-embed:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - split_and_embed
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - split_and_embed
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
-          \ 'langchain' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+            $0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
-          \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
-          \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n    import ast\n    for\
-          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
-          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
-          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
-          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
-          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
-          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
-          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
-          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
-          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
-          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
-          \n"
-        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
+            \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
+            \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
+            \ langchain_core.load import load\n    import os\n    import ast\n    for\
+            \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+            \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+            \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+            \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+            \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+            \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+            \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+            \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+            \    vector_db.add_documents(all_splits)\n\n"
+        image: quay.io/ikatav/redis_embedding:0.0.2
     exec-split-and-embed-2:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - split_and_embed
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - split_and_embed
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
-          \ 'langchain' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+            $0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
-          \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
-          \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n    import ast\n    for\
-          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
-          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
-          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
-          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
-          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
-          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
-          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
-          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
-          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
-          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
-          \n"
-        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
+            \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
+            \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
+            \ langchain_core.load import load\n    import os\n    import ast\n    for\
+            \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+            \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+            \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+            \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+            \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+            \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+            \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+            \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+            \    vector_db.add_documents(all_splits)\n\n"
+        image: quay.io/ikatav/redis_embedding:0.0.2
     exec-split-and-embed-3:
       container:
         args:
-        - --executor_input
-        - '{{$}}'
-        - --function_to_execute
-        - split_and_embed
+          - --executor_input
+          - "{{$}}"
+          - --function_to_execute
+          - split_and_embed
         command:
-        - sh
-        - -c
-        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
-          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'langchain-community'\
-          \ 'langchain' && \"$0\" \"$@\"\n"
-        - sh
-        - -ec
-        - 'program_path=$(mktemp -d)
+          - sh
+          - -c
+          - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+            \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+            \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+            \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+            $0\" \"$@\"\n"
+          - sh
+          - -ec
+          - 'program_path=$(mktemp -d)
 
 
-          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+            printf "%s" "$0" > "$program_path/ephemeral_component.py"
 
-          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+            _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
 
-          '
-        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
-          \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
-          \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
-          \ langchain_core.load import load\n    import os\n    import ast\n    for\
-          \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
-          \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
-          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
-          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
-          \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
-          \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
-          \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
-          \    vector_db.add_documents(all_splits)\n\n    # return dsl.ContainerSpec(\n\
-          \        # image='quay.io/ecosystem-appeng/embeddingjob:0.0.4', \n     \
-          \   # command=['pip', 'install', 'langchain-community', 'langchain'], \n\
-          \        # args=[]\n        # args=['langchain-community', 'langchain'])\n\
-          \n"
-        image: quay.io/ecosystem-appeng/embeddingjob:0.0.4
+            '
+          - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+            \ *\n\ndef split_and_embed(input_docs_path: dsl.InputPath()):\n    from\
+            \ langchain.text_splitter import RecursiveCharacterTextSplitter\n    from\
+            \ vector_db.db_provider_factory import DBFactory\n    import json\n    from\
+            \ langchain_core.load import load\n    import os\n    import ast\n    for\
+            \ config in ['EMBED_CONF', 'DB_CONF']:\n        env_dict: dict= ast.literal_eval(os.getenv(config,\
+            \ '{}'))\n        for key, value in env_dict.items():\n            os.environ[key]\
+            \ = value  \n    # Load docs\n    with open(input_docs_path, 'r') as f:\n\
+            \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+            \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+            \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
+            \    )\n    all_splits = text_splitter.split_documents(docs)\n\n\n    db_type\
+            \ = os.getenv('DB_TYPE')\n    vector_db = DBFactory().create_db_provider(db_type)\n\
+            \    vector_db.add_documents(all_splits)\n\n"
+        image: quay.io/ikatav/redis_embedding:0.0.2
 pipelineInfo:
   name: main
 root:
@@ -425,7 +407,8 @@ root:
         taskInfo:
           name: condition-1
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_repo']
+          condition:
+            inputs.parameter_values['pipelinechannel--is_load_from_repo']
             == true
       condition-2:
         componentRef:
@@ -437,7 +420,8 @@ root:
         taskInfo:
           name: condition-2
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_s3'] ==
+          condition:
+            inputs.parameter_values['pipelinechannel--is_load_from_s3'] ==
             true
       condition-3:
         componentRef:
@@ -449,12 +433,13 @@ root:
         taskInfo:
           name: condition-3
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_urls']
+          condition:
+            inputs.parameter_values['pipelinechannel--is_load_from_urls']
             == true
   inputDefinitions:
     parameters:
       TODO_must_update_secret_ds_pipeline_config_llm_rag:
-        defaultValue: ''
+        defaultValue: ""
         isOptional: true
         parameterType: STRING
       is_load_from_repo:
@@ -472,43 +457,43 @@ platforms:
       executors:
         exec-load-data-from-repo:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: REPO_CONFIG
-              secretKey: REPO_CONFIG
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: REPO_CONFIG
+                  secretKey: REPO_CONFIG
+              secretName: ds-pipeline-config-llm-rag
         exec-load-data-from-s3:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: S3_CONFIG
-              secretKey: S3_CONFIG
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: S3_CONFIG
+                  secretKey: S3_CONFIG
+              secretName: ds-pipeline-config-llm-rag
         exec-load-data-from-urls:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: URLS_CONFIG
-              secretKey: URLS_CONFIG
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: URLS_CONFIG
+                  secretKey: URLS_CONFIG
+              secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
-            - envVar: DB_CONF
-              secretKey: DB_CONF
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: EMBED_CONF
+                  secretKey: EMBED_CONF
+                - envVar: DB_CONF
+                  secretKey: DB_CONF
+              secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-2:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
-            - envVar: DB_CONF
-              secretKey: DB_CONF
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: EMBED_CONF
+                  secretKey: EMBED_CONF
+                - envVar: DB_CONF
+                  secretKey: DB_CONF
+              secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-3:
           secretAsEnv:
-          - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
-            - envVar: DB_CONF
-              secretKey: DB_CONF
-            secretName: ds-pipeline-config-llm-rag
+            - keyToEnv:
+                - envVar: EMBED_CONF
+                  secretKey: EMBED_CONF
+                - envVar: DB_CONF
+                  secretKey: DB_CONF
+              secretName: ds-pipeline-config-llm-rag

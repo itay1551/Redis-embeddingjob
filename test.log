@@ -1,7 +1,7 @@
-I0106 14:05:53.839621      32 launcher_v2.go:95] input ComponentSpec:{
-  "outputDefinitions": {
+I0107 13:48:29.358284      30 launcher_v2.go:95] input ComponentSpec:{
+  "inputDefinitions": {
     "artifacts": {
-      "out_data_path": {
+      "input_docs_path": {
         "artifactType": {
           "schemaTitle": "system.Artifact",
           "schemaVersion": "0.0.1"
@@ -9,70 +9,109 @@ I0106 14:05:53.839621      32 launcher_v2.go:95] input ComponentSpec:{
       }
     }
   },
-  "executorLabel": "exec-load-data-from-s3"
+  "executorLabel": "exec-split-and-embed-3"
 }
-I0106 14:05:53.842064      32 cache.go:126] Connecting to cache endpoint ds-pipeline-dspa.itay-project.svc.cluster.local:8887
+I0107 13:48:29.360995      30 cache.go:126] Connecting to cache endpoint ds-pipeline-dspa.itay-project.svc.cluster.local:8887
+Defaulting to user installation because normal site-packages is not writeable
+Looking in links: /tmp/tmp9yx8i_5f
+Requirement already satisfied: setuptools in /usr/lib/python3.11/site-packages (65.5.1)
+Requirement already satisfied: pip in /usr/lib/python3.11/site-packages (22.3.1)
 ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-kfp 2.11.0 requires click<9,>=8.0.0, which is not installed.
-kfp 2.11.0 requires docstring-parser<1,>=0.7.3, which is not installed.
-kfp 2.11.0 requires google-api-core!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0dev,>=1.31.5, which is not installed.
-kfp 2.11.0 requires google-auth<3,>=1.6.1, which is not installed.
-kfp 2.11.0 requires google-cloud-storage<3,>=2.2.1, which is not installed.
-kfp 2.11.0 requires kfp-pipeline-spec==0.6.0, which is not installed.
-kfp 2.11.0 requires kfp-server-api<2.4.0,>=2.1.0, which is not installed.
-kfp 2.11.0 requires kubernetes<31,>=8.0.0, which is not installed.
-kfp 2.11.0 requires protobuf<5,>=4.21.1, which is not installed.
-kfp 2.11.0 requires tabulate<1,>=0.8.6, which is not installed.
-kfp 2.11.0 requires requests-toolbelt<1,>=0.8.0, but you have requests-toolbelt 1.0.0 which is incompatible.
-kfp 2.11.0 requires urllib3<2.0.0, but you have urllib3 2.3.0 which is incompatible.
-
-[notice] A new release of pip is available: 24.2 -> 24.3.1
-[notice] To update, run: pip install --upgrade pip
-[KFP Executor 2025-01-06 14:06:08,779 INFO]: Looking for component `load_data_from_s3` in --component_module_path `/tmp/tmp.DTjOadnZn6/ephemeral_component.py`
-[KFP Executor 2025-01-06 14:06:08,780 INFO]: Loading KFP component "load_data_from_s3" from /tmp/tmp.DTjOadnZn6/ephemeral_component.py (directory "/tmp/tmp.DTjOadnZn6" and module name "ephemeral_component")
-[KFP Executor 2025-01-06 14:06:08,780 INFO]: Got executor_input:
+transformers 4.47.1 requires huggingface-hub<1.0,>=0.24.0, but you have huggingface-hub 0.20.2 which is incompatible.
+[KFP Executor 2025-01-07 13:48:33,946 INFO]: Looking for component `split_and_embed` in --component_module_path `/tmp/tmp.OV9q4dhYZX/ephemeral_component.py`
+[KFP Executor 2025-01-07 13:48:33,946 INFO]: Loading KFP component "split_and_embed" from /tmp/tmp.OV9q4dhYZX/ephemeral_component.py (directory "/tmp/tmp.OV9q4dhYZX" and module name "ephemeral_component")
+[KFP Executor 2025-01-07 13:48:33,947 INFO]: Got executor_input:
 {
-    "inputs": {},
-    "outputs": {
+    "inputs": {
         "artifacts": {
-            "out_data_path": {
+            "input_docs_path": {
                 "artifacts": [
                     {
+                        "name": "13",
                         "type": {
-                            "schemaTitle": "system.Artifact",
-                            "schemaVersion": "0.0.1"
+                            "instanceSchema": ""
                         },
-                        "uri": "s3://demo-llm-rag/main/3dd0a9d3-8ddd-449f-9760-d71933af31c7/load-data-from-s3/out_data_path"
+                        "uri": "s3://demo-llm-rag/main/6fdf046b-ac4d-4b01-9a06-9f5321e43f39/load-data-from-urls/out_data_path",
+                        "metadata": {
+                            "display_name": "out_data_path",
+                            "store_session_info": "{\"Provider\":\"s3\",\"Params\":{\"accessKeyKey\":\"AWS_ACCESS_KEY_ID\",\"disableSSL\":\"false\",\"endpoint\":\"https://minio-api-minio.apps.ai-dev02.kni.syseng.devcluster.openshift.com\",\"fromEnv\":\"false\",\"region\":\"us-east-1\",\"secretKeyKey\":\"AWS_SECRET_ACCESS_KEY\",\"secretName\":\"dashboard-dspa-secret\"}}"
+                        }
                     }
                 ]
             }
-        },
+        }
+    },
+    "outputs": {
         "outputFile": "/tmp/kfp_outputs/output_metadata.json"
     }
 }
-{'AWS_ACCESS_KEY_ID': 'minio', 'AWS_SECRET_ACCESS_KEY': 'minio123', 'AWS_S3_ENDPOINT': 'https://minio-api-minio.apps.ai-dev02.kni.syseng.devcluster.openshift.com', 'AWS_S3_BUCKET': 'demo-llm-rag', 'AWS_S3_FOLDER_PATH': 'pdfs'}
-{'ResponseMetadata': {'RequestId': '18181F9241473F6D', 'HostId': 'dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8', 'HTTPStatusCode': 200, 'HTTPHeaders': {'accept-ranges': 'bytes', 'content-length': '1309', 'content-security-policy': 'block-all-mixed-content', 'content-type': 'application/xml', 'server': 'MinIO', 'strict-transport-security': 'max-age=31536000; includeSubDomains', 'vary': 'Origin, Accept-Encoding', 'x-amz-id-2': 'dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8', 'x-amz-request-id': '18181F9241473F6D', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1; mode=block', 'date': 'Mon, 06 Jan 2025 14:06:09 GMT', 'set-cookie': 'dd7b7a62658a0923fcd63af36692b68a=a9d0324cd11e92ffe1e16fdc46a477e7; path=/; HttpOnly; Secure; SameSite=None'}, 'RetryAttempts': 0}, 'IsTruncated': False, 'Contents': [{'Key': 'pdfs/1.pdf', 'LastModified': datetime.datetime(2025, 1, 6, 13, 53, 50, 386000, tzinfo=tzlocal()), 'ETag': '"1e1dda02b4bcdcebce6c614159b5dbf5"', 'Size': 617734, 'StorageClass': 'STANDARD'}, {'Key': 'pdfs/2.pdf', 'LastModified': datetime.datetime(2025, 1, 6, 13, 53, 50, 386000, tzinfo=tzlocal()), 'ETag': '"8daed1e75da6913966f3d30448acd2c9"', 'Size': 52138, 'StorageClass': 'STANDARD'}, {'Key': 'pdfs/3.pdf', 'LastModified': datetime.datetime(2025, 1, 6, 13, 53, 50, 673000, tzinfo=tzlocal()), 'ETag': '"a32acfd138446b60c440d74630db850a"', 'Size': 242856, 'StorageClass': 'STANDARD'}, {'Key': 'pdfs/4.pdf', 'LastModified': datetime.datetime(2025, 1, 6, 13, 53, 50, 676000, tzinfo=tzlocal()), 'ETag': '"186b6f34a9fcbf6277f10847930a2a4b"', 'Size': 337958, 'StorageClass': 'STANDARD'}, {'Key': 'pdfs/5.pdf', 'LastModified': datetime.datetime(2025, 1, 6, 13, 53, 50, 681000, tzinfo=tzlocal()), 'ETag': '"6631e4a22172acb1dfc4a7b0f1248eb6"', 'Size': 642173, 'StorageClass': 'STANDARD'}], 'Name': 'demo-llm-rag', 'Prefix': 'pdfs/', 'MaxKeys': 1000, 'EncodingType': 'url', 'KeyCount': 5}
-pdfs/1.pdf
-pdfs/2.pdf
-pdfs/3.pdf
-pdfs/4.pdf
-pdfs/5.pdf
-breaking
-[KFP Executor 2025-01-06 14:06:19,904 INFO]: Wrote executor output file to /tmp/kfp_outputs/output_metadata.json.
-I0106 14:06:20.005534      32 launcher_v2.go:710] ExecutorOutput: {
-  "artifacts": {
-    "out_data_path": {
-      "artifacts": [
-        {
-          "name": "",
-          "uri": "s3://demo-llm-rag/main/3dd0a9d3-8ddd-449f-9760-d71933af31c7/load-data-from-s3/out_data_path",
-          "metadata": {}
-        }
-      ]
-    }
-  }
-}
-I0106 14:06:20.031193      32 object_store.go:176] uploadFile(localFilePath="/s3/demo-llm-rag/main/3dd0a9d3-8ddd-449f-9760-d71933af31c7/load-data-from-s3/out_data_path", blobFilePath="load-data-from-s3/out_data_path")
-I0106 14:06:20.088975      32 launcher_v2.go:156] publish success.
-time="2025-01-06T14:06:20.836Z" level=info msg="sub-process exited" argo=true error="<nil>"
-time="2025-01-06T14:06:21.808Z" level=info msg="sub-process exited" argo=true error="<nil>"
+/tmp/tmp.OV9q4dhYZX/ephemeral_component.py:21: LangChainBetaWarning: The function `load` is in beta. It is actively being worked on, so the API may change.
+  docs = [load(doc) for doc in docs]
+/app/vector_db/db_provider.py:11: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the langchain-huggingface package and should be used instead. To use it run `pip install -U langchain-huggingface` and import as `from langchain_huggingface import HuggingFaceEmbeddings`.
+  self.embeddings = HuggingFaceEmbeddings()
+/app/vector_db/db_provider.py:11: LangChainDeprecationWarning: Default values for HuggingFaceEmbeddings.model_name were deprecated in LangChain 0.2.16 and will be removed in 0.4.0. Explicitly pass a model_name to the HuggingFaceEmbeddings constructor instead.
+  self.embeddings = HuggingFaceEmbeddings()
+/usr/local/lib/python3.11/site-packages/transformers/utils/hub.py:128: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+There was a problem when trying to write in your cache folder (/cache/.cache). You should set the environment variable TRANSFORMERS_CACHE to a writable directory.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/langchain_community/embeddings/huggingface.py", line 84, in __init__
+    import sentence_transformers
+  File "/usr/local/lib/python3.11/site-packages/sentence_transformers/__init__.py", line 3, in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+  File "/usr/local/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py", line 3, in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+  File "/usr/local/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py", line 4, in <module>
+    from .. import SentenceTransformer
+  File "/usr/local/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py", line 11, in <module>
+    import transformers
+  File "/usr/local/lib/python3.11/site-packages/transformers/__init__.py", line 26, in <module>
+    from . import dependency_versions_check
+  File "/usr/local/lib/python3.11/site-packages/transformers/dependency_versions_check.py", line 57, in <module>
+    require_version_core(deps[pkg])
+  File "/usr/local/lib/python3.11/site-packages/transformers/utils/versions.py", line 117, in require_version_core
+    return require_version(requirement, hint)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/transformers/utils/versions.py", line 111, in require_version
+    _compare_versions(op, got_ver, want_ver, requirement, pkg, hint)
+  File "/usr/local/lib/python3.11/site-packages/transformers/utils/versions.py", line 44, in _compare_versions
+    raise ImportError(
+ImportError: huggingface-hub>=0.24.0,<1.0 is required for a normal functioning of this module, but found huggingface-hub==0.20.2.
+Try: `pip install transformers -U` or `pip install -e '.[dev]'` if you're working with git main
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/usr/local/lib/python3.11/site-packages/kfp/dsl/executor_main.py", line 109, in <module>
+    executor_main()
+  File "/usr/local/lib/python3.11/site-packages/kfp/dsl/executor_main.py", line 101, in executor_main
+    output_file = executor.execute()
+                  ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/kfp/dsl/executor.py", line 361, in execute
+    result = self.func(**func_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/tmp.OV9q4dhYZX/ephemeral_component.py", line 32, in split_and_embed
+    vector_db = DBFactory().create_db_provider(db_type)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/vector_db/db_provider_factory.py", line 22, in create_db_provider
+    return PGVectorProvider()
+           ^^^^^^^^^^^^^^^^^^
+  File "/app/vector_db/pgvector_provider.py", line 14, in __init__
+    super().__init__()
+  File "/app/vector_db/db_provider.py", line 11, in __init__
+    self.embeddings = HuggingFaceEmbeddings()
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 215, in warn_if_direct_instance
+    return wrapped(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/langchain_community/embeddings/huggingface.py", line 87, in __init__
+    raise ImportError(
+ImportError: Could not import sentence_transformers python package. Please install it with `pip install sentence-transformers`.
+I0107 13:48:36.889800      30 launcher_v2.go:156] publish success.
+F0107 13:48:36.889834      30 main.go:53] failed to execute component: exit status 1
+time="2025-01-07T13:48:37.342Z" level=info msg="sub-process exited" argo=true error="<nil>"
+Error: exit status 1
+time="2025-01-07T13:48:38.320Z" level=info msg="sub-process exited" argo=true error="<nil>"
+Error: exit status 1
