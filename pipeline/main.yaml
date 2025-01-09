@@ -327,9 +327,9 @@ deploymentSpec:
           ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
           \        for key, value in env_dict.items():\n            os.environ[key]\
           \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"/cache\"\n    # Load docs\n    with open(input_docs_path, \"r\") as\
-          \ f:\n        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n\
-          \    # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\
@@ -369,9 +369,9 @@ deploymentSpec:
           ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
           \        for key, value in env_dict.items():\n            os.environ[key]\
           \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"/cache\"\n    # Load docs\n    with open(input_docs_path, \"r\") as\
-          \ f:\n        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n\
-          \    # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\
@@ -411,9 +411,9 @@ deploymentSpec:
           ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
           \        for key, value in env_dict.items():\n            os.environ[key]\
           \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"/cache\"\n    # Load docs\n    with open(input_docs_path, \"r\") as\
-          \ f:\n        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n\
-          \    # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
+          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
+          \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\

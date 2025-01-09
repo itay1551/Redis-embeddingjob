@@ -174,7 +174,6 @@ def split_and_embed(input_docs_path: dsl.InputPath(), cache: dsl.OutputPath()):
         for key, value in env_dict.items():
             os.environ[key] = value
     os.environ["HF_HOME"] = "/cache"
-    os.environ["TRANSFORMERS_CACHE"] = "/cache"
     # Load docs
     with open(input_docs_path, "r") as f:
         docs = json.load(f)
