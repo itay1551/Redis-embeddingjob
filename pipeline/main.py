@@ -90,15 +90,7 @@ def load_data_from_s3(out_data_path: dsl.OutputPath()):
             break
 
     with open(out_data_path, "w") as f:
-        json.dump([dumpd(doc) for doc in docs], f)
-
-
-def load_env_var_dict(name: str):
-    import ast
-
-    env_dict: dict = ast.literal_eval(os.getenv(name))
-    for key, value in env_dict.items():
-        os.environ[key] = value
+        json.dump([dumpd(doc) for doc_pages in docs for doc in doc_pages], f)
 
 
 # Repository
@@ -166,8 +158,8 @@ def load_data_from_urls(out_data_path: dsl.OutputPath()):
 # @dsl.component(base_image='quay.io/ecosystem-appeng/embeddingjob:0.0.4',packages_to_install=['langchain-community', 'langchain'])
 # @dsl.component(base_image='quay.io/ikatav/redis_embedding:0.0.1',packages_to_install=['langchain-community', 'langchain', 'sentence-transformers'])
 # @dsl.container_component
-@dsl.component(base_image="quay.io/ikatav/redis_embedding:0.0.2")
-def split_and_embed(input_docs_path: dsl.InputPath()):
+@dsl.component(base_image="quay.io/ikatav/redis_embedding:0.0.3")
+def split_and_embed(input_docs_path: dsl.InputPath(), cache: dsl.OutputPath()):
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     from vector_db.db_provider_factory import DBFactory
     import json
@@ -175,10 +167,14 @@ def split_and_embed(input_docs_path: dsl.InputPath()):
     import os
     import ast
 
+    print(os.getcwd())
+
     for config in ["EMBED_CONF", "DB_CONF"]:
         env_dict: dict = ast.literal_eval(os.getenv(config, "{}"))
         for key, value in env_dict.items():
             os.environ[key] = value
+    os.environ["HF_HOME"] = "/cache"
+    os.environ["TRANSFORMERS_CACHE"] = "/cache"
     # Load docs
     with open(input_docs_path, "r") as f:
         docs = json.load(f)
@@ -190,7 +186,6 @@ def split_and_embed(input_docs_path: dsl.InputPath()):
         length_function=len,
     )
     all_splits = text_splitter.split_documents(docs)
-
     db_type = os.getenv("DB_TYPE")
     vector_db = DBFactory().create_db_provider(db_type)
     vector_db.add_documents(all_splits)
