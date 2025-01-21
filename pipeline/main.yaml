@@ -2,9 +2,9 @@
 # Name: main
 # Inputs:
 #    TODO_must_update_secret_ds_pipeline_config_llm_rag: str [Default: '']
-#    is_load_from_repo: bool
-#    is_load_from_s3: bool
-#    is_load_from_urls: bool
+#    load_from_repo: bool
+#    load_from_s3: bool
+#    load_from_urls: bool
 components:
   comp-condition-1:
     dag:
@@ -31,7 +31,7 @@ components:
             name: split-and-embed
     inputDefinitions:
       parameters:
-        pipelinechannel--is_load_from_repo:
+        pipelinechannel--load_from_repo:
           parameterType: BOOLEAN
   comp-condition-2:
     dag:
@@ -58,7 +58,7 @@ components:
             name: split-and-embed-2
     inputDefinitions:
       parameters:
-        pipelinechannel--is_load_from_s3:
+        pipelinechannel--load_from_s3:
           parameterType: BOOLEAN
   comp-condition-3:
     dag:
@@ -85,7 +85,7 @@ components:
             name: split-and-embed-3
     inputDefinitions:
       parameters:
-        pipelinechannel--is_load_from_urls:
+        pipelinechannel--load_from_urls:
           parameterType: BOOLEAN
   comp-load-data-from-repo:
     executorLabel: exec-load-data-from-repo
@@ -323,18 +323,17 @@ deploymentSpec:
           \    from langchain.text_splitter import RecursiveCharacterTextSplitter\n\
           \    from vector_db.db_provider_factory import DBFactory\n    import json\n\
           \    from langchain_core.load import load\n    import os\n    import ast\n\
-          \n    print(os.getcwd())\n\n    for config in [\"EMBED_CONF\", \"DB_CONF\"\
-          ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
-          \        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \n    for config in [\"DB_CONF\"]:\n        env_dict: dict = ast.literal_eval(os.getenv(config,\
+          \ \"{}\"))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value\n    os.environ[\"HF_HOME\"] = cache\n    os.environ[\"SENTENCE_TRANSFORMERS_HOME\"\
+          ] = cache\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
           \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
           \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\
           \    vector_db.add_documents(all_splits)\n\n"
-        image: quay.io/ikatav/redis_embedding:0.0.3
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.5
     exec-split-and-embed-2:
       container:
         args:
@@ -365,18 +364,17 @@ deploymentSpec:
           \    from langchain.text_splitter import RecursiveCharacterTextSplitter\n\
           \    from vector_db.db_provider_factory import DBFactory\n    import json\n\
           \    from langchain_core.load import load\n    import os\n    import ast\n\
-          \n    print(os.getcwd())\n\n    for config in [\"EMBED_CONF\", \"DB_CONF\"\
-          ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
-          \        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \n    for config in [\"DB_CONF\"]:\n        env_dict: dict = ast.literal_eval(os.getenv(config,\
+          \ \"{}\"))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value\n    os.environ[\"HF_HOME\"] = cache\n    os.environ[\"SENTENCE_TRANSFORMERS_HOME\"\
+          ] = cache\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
           \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
           \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\
           \    vector_db.add_documents(all_splits)\n\n"
-        image: quay.io/ikatav/redis_embedding:0.0.3
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.5
     exec-split-and-embed-3:
       container:
         args:
@@ -407,18 +405,17 @@ deploymentSpec:
           \    from langchain.text_splitter import RecursiveCharacterTextSplitter\n\
           \    from vector_db.db_provider_factory import DBFactory\n    import json\n\
           \    from langchain_core.load import load\n    import os\n    import ast\n\
-          \n    print(os.getcwd())\n\n    for config in [\"EMBED_CONF\", \"DB_CONF\"\
-          ]:\n        env_dict: dict = ast.literal_eval(os.getenv(config, \"{}\"))\n\
-          \        for key, value in env_dict.items():\n            os.environ[key]\
-          \ = value\n    os.environ[\"HF_HOME\"] = \"/cache\"\n    os.environ[\"TRANSFORMERS_CACHE\"\
-          ] = \"\"\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
+          \n    for config in [\"DB_CONF\"]:\n        env_dict: dict = ast.literal_eval(os.getenv(config,\
+          \ \"{}\"))\n        for key, value in env_dict.items():\n            os.environ[key]\
+          \ = value\n    os.environ[\"HF_HOME\"] = cache\n    os.environ[\"SENTENCE_TRANSFORMERS_HOME\"\
+          ] = cache\n    # Load docs\n    with open(input_docs_path, \"r\") as f:\n\
           \        docs = json.load(f)\n    docs = [load(doc) for doc in docs]\n \
           \   # Split the documents\n    text_splitter = RecursiveCharacterTextSplitter(\n\
           \        chunk_size=1024,\n        chunk_overlap=40,\n        length_function=len,\n\
           \    )\n    all_splits = text_splitter.split_documents(docs)\n    db_type\
           \ = os.getenv(\"DB_TYPE\")\n    vector_db = DBFactory().create_db_provider(db_type)\n\
           \    vector_db.add_documents(all_splits)\n\n"
-        image: quay.io/ikatav/redis_embedding:0.0.3
+        image: quay.io/ecosystem-appeng/embeddingjob:0.0.5
 pipelineInfo:
   name: main
 root:
@@ -429,48 +426,47 @@ root:
           name: comp-condition-1
         inputs:
           parameters:
-            pipelinechannel--is_load_from_repo:
-              componentInputParameter: is_load_from_repo
+            pipelinechannel--load_from_repo:
+              componentInputParameter: load_from_repo
         taskInfo:
           name: condition-1
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_repo']
-            == true
+          condition: inputs.parameter_values['pipelinechannel--load_from_repo'] ==
+            true
       condition-2:
         componentRef:
           name: comp-condition-2
         inputs:
           parameters:
-            pipelinechannel--is_load_from_s3:
-              componentInputParameter: is_load_from_s3
+            pipelinechannel--load_from_s3:
+              componentInputParameter: load_from_s3
         taskInfo:
           name: condition-2
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_s3'] ==
-            true
+          condition: inputs.parameter_values['pipelinechannel--load_from_s3'] == true
       condition-3:
         componentRef:
           name: comp-condition-3
         inputs:
           parameters:
-            pipelinechannel--is_load_from_urls:
-              componentInputParameter: is_load_from_urls
+            pipelinechannel--load_from_urls:
+              componentInputParameter: load_from_urls
         taskInfo:
           name: condition-3
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--is_load_from_urls']
-            == true
+          condition: inputs.parameter_values['pipelinechannel--load_from_urls'] ==
+            true
   inputDefinitions:
     parameters:
       TODO_must_update_secret_ds_pipeline_config_llm_rag:
         defaultValue: ''
         isOptional: true
         parameterType: STRING
-      is_load_from_repo:
+      load_from_repo:
         parameterType: BOOLEAN
-      is_load_from_s3:
+      load_from_s3:
         parameterType: BOOLEAN
-      is_load_from_urls:
+      load_from_urls:
         parameterType: BOOLEAN
 schemaVersion: 2.1.0
 sdkVersion: kfp-2.11.0
@@ -500,24 +496,18 @@ platforms:
         exec-split-and-embed:
           secretAsEnv:
           - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
             - envVar: DB_CONF
               secretKey: DB_CONF
             secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-2:
           secretAsEnv:
           - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
             - envVar: DB_CONF
               secretKey: DB_CONF
             secretName: ds-pipeline-config-llm-rag
         exec-split-and-embed-3:
           secretAsEnv:
           - keyToEnv:
-            - envVar: EMBED_CONF
-              secretKey: EMBED_CONF
             - envVar: DB_CONF
               secretKey: DB_CONF
             secretName: ds-pipeline-config-llm-rag

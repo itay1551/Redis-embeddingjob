@@ -155,10 +155,8 @@ def load_data_from_urls(out_data_path: dsl.OutputPath()):
         json.dump([dumpd(doc) for doc in docs], f)
 
 
-# @dsl.component(base_image='quay.io/ecosystem-appeng/embeddingjob:0.0.4',packages_to_install=['langchain-community', 'langchain'])
-# @dsl.component(base_image='quay.io/ikatav/redis_embedding:0.0.1',packages_to_install=['langchain-community', 'langchain', 'sentence-transformers'])
 # @dsl.container_component
-@dsl.component(base_image="quay.io/ikatav/redis_embedding:0.0.3")
+@dsl.component(base_image="quay.io/ecosystem-appeng/embeddingjob:0.0.5")
 def split_and_embed(input_docs_path: dsl.InputPath(), cache: dsl.OutputPath()):
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     from vector_db.db_provider_factory import DBFactory
@@ -167,13 +165,12 @@ def split_and_embed(input_docs_path: dsl.InputPath(), cache: dsl.OutputPath()):
     import os
     import ast
 
-    print(os.getcwd())
-
-    for config in ["EMBED_CONF", "DB_CONF"]:
+    for config in ["DB_CONF"]:
         env_dict: dict = ast.literal_eval(os.getenv(config, "{}"))
         for key, value in env_dict.items():
             os.environ[key] = value
-    os.environ["HF_HOME"] = "/cache"
+    os.environ["HF_HOME"] = cache
+    os.environ["SENTENCE_TRANSFORMERS_HOME"] = cache
     # Load docs
     with open(input_docs_path, "r") as f:
         docs = json.load(f)
@@ -200,7 +197,7 @@ def split_embed_pipeline(load_data_task):
     kubernetes.use_secret_as_env(
         task=split_and_embed_task,
         secret_name=RAG_LLM_SECRET,
-        secret_key_to_env={item: item for item in ["EMBED_CONF", "DB_CONF"]},
+        secret_key_to_env={item: item for item in ["DB_CONF"]},
     )
 
 
@@ -215,21 +212,21 @@ def configuration_load_task(task, secret_config):
 
 @dsl.pipeline(name=os.path.basename(__file__).replace(".py", ""))
 def rag_llm_pipeline(
-    is_load_from_repo: bool,
-    is_load_from_s3: bool,
-    is_load_from_urls: bool,
+    load_from_repo: bool,
+    load_from_s3: bool,
+    load_from_urls: bool,
     TODO_must_update_secret_ds_pipeline_config_llm_rag: str = "",
 ):
 
-    with dsl.If(is_load_from_repo == True):
+    with dsl.If(load_from_repo == True):
         load_data_task = load_data_from_repo()
         configuration_load_task(load_data_task, "REPO_CONFIG")
         split_embed_pipeline(load_data_task)
-    with dsl.If(is_load_from_s3 == True):
+    with dsl.If(load_from_s3 == True):
         load_data_task = load_data_from_s3()
         configuration_load_task(load_data_task, "S3_CONFIG")
         split_embed_pipeline(load_data_task)
-    with dsl.If(is_load_from_urls == True):
+    with dsl.If(load_from_urls == True):
         load_data_task = load_data_from_urls()
         configuration_load_task(load_data_task, "URLS_CONFIG")
         split_embed_pipeline(load_data_task)
